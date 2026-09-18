@@ -8,10 +8,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Facade {
+public class Facade
+{
 
-    public void zerarSistema(){
+    public void zerarSistema()
+    {
 
+    }
+
+    public String getAtributoEmpregado(String emp, String atributo) throws Exception
+    {
+        return null;
+    }
+
+    public String criarEmpregado(String nome, String endereco, String tipo, String salario) throws Exception
+    {
+        return null;
     }
 
 }
