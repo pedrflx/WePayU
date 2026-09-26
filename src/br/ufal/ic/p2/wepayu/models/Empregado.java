@@ -1,34 +1,79 @@
 package br.ufal.ic.p2.wepayu.models;
 
-import br.ufal.ic.p2.wepayu.Exception.EmpregadoNaoExisteException;
+public class Empregado
+{
 
-public class Empregado {
     private String nome;
     private String endereco;
     private String tipo;
-    private int salario;
+    private String salario;
+    private String comissao;
 
-    public Empregado(String nome, String endereco, String tipo, int salario) throws EmpregadoNaoExisteException {
+    private String[] datasCartoes = new String[100];
+    private double[] horasCartoes = new double[100];
+    private int qtdCartoes = 0;
+
+    public Empregado(String nome, String endereco, String tipo, String salario)
+    {
         this.nome = nome;
         this.endereco = endereco;
         this.tipo = tipo;
         this.salario = salario;
     }
 
-    public String getNome() {
+    public Empregado(String nome, String endereco, String tipo, String salario, String comissao)
+    {
+        this.nome = nome;
+        this.endereco = endereco;
+        this.tipo = tipo;
+        this.salario = salario;
+        this.comissao = comissao;
+    }
+
+    public void registrarCartao(String data, double horas)
+    {
+        datasCartoes[qtdCartoes] = data;
+        horasCartoes[qtdCartoes] = horas;
+        qtdCartoes++;
+    }
+
+    public String getNome()
+    {
         return nome;
     }
 
-    public String getEndereco() {
+    public String getEndereco()
+    {
         return endereco;
     }
 
-    public String getTipo() {
+    public String getTipo()
+    {
         return tipo;
     }
 
-    public int getSalario() {
+    public String getSalario()
+    {
         return salario;
     }
 
+    public String getComissao()
+    {
+        return comissao;
+    }
+
+    public String[] getDatasCartoes()
+    {
+        return datasCartoes;
+    }
+
+    public double[] getHorasCartoes()
+    {
+        return horasCartoes;
+    }
+
+    public int getQtdCartoes()
+    {
+        return qtdCartoes;
+    }
 }
