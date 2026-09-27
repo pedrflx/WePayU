@@ -1,71 +1,247 @@
 package br.ufal.ic.p2.wepayu.models;
 
-public class Empregado
+import br.ufal.ic.p2.wepayu.Exception.*;
+import br.ufal.ic.p2.wepayu.utils.Conversor;
+import java.util.Date;
+
+/*
+    Empregado
+    mãe dos três tipos de empregado: EmpregadoHorista, EmpregadoAssalariado e EmpregadoComissionado
+    guarda o que todos têm em comum: nome, endereço, salário, forma de pagamento e sindicato
+    é abstrata porque qualquer empregado é de um dos três tipos, e o que muda de um tipo para outro são métodos abstratos
+*/
+
+public abstract class Empregado
 {
 
     private String nome;
     private String endereco;
-    private String tipo;
     private String salario;
-    private String comissao;
 
-    private String metodoPagamento = "emMaos";
-    private String banco;
-    private String agencia;
-    private String contaCorrente;
+    private MetodoPagamento metodoPagamento = new EmMaos();
+    private MembroSindicato membroSindicato;
 
-    private String[] datasCartoes = new String[100];
-    private double[] horasCartoes = new double[100];
-    private int qtdCartoes = 0;
+    /*
+        Empregado
+        construtor vazio usado pelo XMLDecoder para recriar o objeto quando os dados são carregados
+        pelo mesmo motivo todas as classes salvas no XML têm construtor vazio e setters
+    */
 
-    private String[] datasVendas = new String[100];
-    private double[] valoresVendas = new double[100];
-    private int qtdVendas = 0;
-
-    private String sindicalizado = "false";
-    private String idSindicato;
-    private String taxaSindical;
-
-    private String[] datasTaxas = new String[100];
-    private double[] valoresTaxas = new double[100];
-    private int qtdTaxas = 0;
-
-    public Empregado(String nome, String endereco, String tipo, String salario)
+    public Empregado()
     {
-        this.nome = nome;
-        this.endereco = endereco;
-        this.tipo = tipo;
-        this.salario = salario;
     }
 
-    public Empregado(String nome, String endereco, String tipo, String salario, String comissao)
+    /*
+        Empregado
+        cria o empregado passando pelos setters, que validam cada valor
+        se algum valor for inválido a exceção impede o objeto de ser criado
+    */
+
+    public Empregado(String nome, String endereco, String salario) throws WePayUException
     {
-        this.nome = nome;
-        this.endereco = endereco;
-        this.tipo = tipo;
-        this.salario = salario;
-        this.comissao = comissao;
+        setNome(nome);
+        setEndereco(endereco);
+        setSalario(salario);
     }
 
-    public void registrarCartao(String data, double horas)
+    /*
+        Empregado
+        construtor de cópia, copia os dados comuns de outro empregado
+        é usado para trocar o tipo e para clonar no undo/redo, o sindicato é copiado para não ficar compartilhado
+    */
+
+    public Empregado(Empregado outro)
     {
-        datasCartoes[qtdCartoes] = data;
-        horasCartoes[qtdCartoes] = horas;
-        qtdCartoes++;
+        this.nome = outro.nome;
+        this.endereco = outro.endereco;
+        this.salario = outro.salario;
+        this.metodoPagamento = outro.metodoPagamento;
+        if (outro.membroSindicato != null)
+        {
+            this.membroSindicato = new MembroSindicato(outro.membroSindicato);
+        }
     }
 
-    public void registrarVenda(String data, double valor)
+    /*
+        métodos abstratos
+        o que muda de um tipo de empregado para outro, cada filha é obrigada a implementar
+        tipo, cópia, datas e período de pagamento, salário bruto, valores da folha e seção do relatório
+    */
+
+    public abstract String getTipo();
+
+    public abstract Empregado clonar();
+
+    public abstract Date getPrimeiroPagamento();
+
+    public abstract Date getProximoPagamento(Date atual);
+
+    public abstract Date getInicioPeriodo(Date pagamento);
+
+    public abstract int getDiasPeriodo(Date pagamento);
+
+    public abstract double calcularSalarioBruto(Date pagamento);
+
+    public abstract double[] calcularValoresFolha(Date pagamento);
+
+    public abstract SecaoFolha escolherSecao(FolhaDePagamento folha);
+
+    /*
+        métodos exclusivos de um tipo
+        por padrão lançam o erro de que o empregado não é comissionado ou não é horista
+        só a filha certa sobrescreve com o comportamento real, é o polimorfismo que substitui os if de tipo
+    */
+
+    public String getComissao() throws WePayUException
     {
-        datasVendas[qtdVendas] = data;
-        valoresVendas[qtdVendas] = valor;
-        qtdVendas++;
+        throw new EmpregadoNaoEhComissionadoException();
     }
 
-    public void registrarTaxa(String data, double valor)
+    public void alterarComissao(String comissao) throws WePayUException
     {
-        datasTaxas[qtdTaxas] = data;
-        valoresTaxas[qtdTaxas] = valor;
-        qtdTaxas++;
+        throw new EmpregadoNaoEhComissionadoException();
+    }
+
+    public void registrarVenda(String data, String valor) throws WePayUException
+    {
+        throw new EmpregadoNaoEhComissionadoException();
+    }
+
+    public String getVendasRealizadas(String dataInicial, String dataFinal) throws WePayUException
+    {
+        throw new EmpregadoNaoEhComissionadoException();
+    }
+
+    public void registrarCartao(String data, String horas) throws WePayUException
+    {
+        throw new EmpregadoNaoEhHoristaException();
+    }
+
+    public String getHorasNormaisTrabalhadas(String dataInicial, String dataFinal) throws WePayUException
+    {
+        throw new EmpregadoNaoEhHoristaException();
+    }
+
+    public String getHorasExtrasTrabalhadas(String dataInicial, String dataFinal) throws WePayUException
+    {
+        throw new EmpregadoNaoEhHoristaException();
+    }
+
+    /*
+        ehDiaDePagamento
+        diz se o empregado recebe nessa data
+        começa no primeiro pagamento e vai pulando para o próximo até alcançar ou passar da data
+    */
+
+    public boolean ehDiaDePagamento(Date data)
+    {
+        Date atual = getPrimeiroPagamento();
+        while (atual.before(data))
+        {
+            atual = getProximoPagamento(atual);
+        }
+        return atual.equals(data);
+    }
+
+    /*
+        calcularPagamento
+        devolve o bruto, o desconto e o líquido de um pagamento, nessa ordem
+        o desconto junta a taxa do período com a dívida anterior com o sindicato e nunca passa do salário bruto
+    */
+
+    public double[] calcularPagamento(Date data)
+    {
+        double bruto = calcularSalarioBruto(data);
+        double descontoTotal = Conversor.truncar(calcularDescontoPeriodo(data) + calcularDebitoSindicato(data));
+        double desconto = Math.min(bruto, descontoTotal);
+        return new double[]{bruto, desconto, bruto - desconto};
+    }
+
+    private double calcularDescontoPeriodo(Date data)
+    {
+        if (membroSindicato == null) return 0.0;
+
+        return membroSindicato.calcularDesconto(getInicioPeriodo(data), Conversor.adicionarDias(data, 1), getDiasPeriodo(data));
+    }
+
+    /*
+        calcularDebitoSindicato
+        dívida com o sindicato que sobrou dos pagamentos anteriores
+        quando o salário de um pagamento não cobre o desconto, a diferença passa para o próximo pagamento
+    */
+
+    private double calcularDebitoSindicato(Date data)
+    {
+        if (membroSindicato == null) return 0.0;
+
+        double debito = 0.0;
+        Date atual = getPrimeiroPagamento();
+
+        while (atual.before(data))
+        {
+            double bruto = calcularSalarioBruto(atual);
+            double devido = debito + calcularDescontoPeriodo(atual);
+
+            if (bruto >= devido) debito = 0.0;
+            else debito = devido - bruto;
+
+            atual = getProximoPagamento(atual);
+        }
+        return debito;
+    }
+
+    public String formatarMetodoPagamento()
+    {
+        return metodoPagamento.getDescricao(endereco);
+    }
+
+    private MembroSindicato getMembro() throws WePayUException
+    {
+        if (membroSindicato == null)
+        {
+            throw new EmpregadoNaoEhSindicalizadoException();
+        }
+        return membroSindicato;
+    }
+
+    public boolean pertenceAoSindicato(String idMembro)
+    {
+        return membroSindicato != null && membroSindicato.getIdMembro().equals(idMembro);
+    }
+
+    public String getSindicalizado()
+    {
+        return String.valueOf(membroSindicato != null);
+    }
+
+    public String getIdSindicato() throws WePayUException
+    {
+        return getMembro().getIdMembro();
+    }
+
+    public String getTaxaSindical() throws WePayUException
+    {
+        return getMembro().getTaxaSindical();
+    }
+
+    public void registrarTaxa(String data, String valor) throws WePayUException
+    {
+        getMembro().registrarTaxa(data, valor);
+    }
+
+    public String getTaxasServico(String dataInicial, String dataFinal) throws WePayUException
+    {
+        return getMembro().getTaxasServico(dataInicial, dataFinal);
+    }
+
+    public MembroSindicato getMembroSindicato()
+    {
+        return membroSindicato;
+    }
+
+    public void setMembroSindicato(MembroSindicato membroSindicato)
+    {
+        this.membroSindicato = membroSindicato;
     }
 
     public String getNome()
@@ -73,8 +249,9 @@ public class Empregado
         return nome;
     }
 
-    public void setNome(String nome)
+    public void setNome(String nome) throws WePayUException
     {
+        Conversor.validarTexto(nome, new NomeNuloException());
         this.nome = nome;
     }
 
@@ -83,19 +260,10 @@ public class Empregado
         return endereco;
     }
 
-    public void setEndereco(String endereco)
+    public void setEndereco(String endereco) throws WePayUException
     {
+        Conversor.validarTexto(endereco, new EnderecoNuloException());
         this.endereco = endereco;
-    }
-
-    public String getTipo()
-    {
-        return tipo;
-    }
-
-    public void setTipo(String tipo)
-    {
-        this.tipo = tipo;
     }
 
     public String getSalario()
@@ -103,133 +271,19 @@ public class Empregado
         return salario;
     }
 
-    public void setSalario(String salario)
+    public void setSalario(String salario) throws WePayUException
     {
+        Conversor.converterNaoNegativo(salario, new SalarioNuloException(), new SalarioNaoNumericoException(), new SalarioNegativoException());
         this.salario = salario;
     }
 
-    public String getComissao()
-    {
-        return comissao;
-    }
-
-    public void setComissao(String comissao)
-    {
-        this.comissao = comissao;
-    }
-
-    public String getMetodoPagamento()
+    public MetodoPagamento getMetodoPagamento()
     {
         return metodoPagamento;
     }
 
-    public void setMetodoPagamento(String metodoPagamento)
+    public void setMetodoPagamento(MetodoPagamento metodoPagamento)
     {
         this.metodoPagamento = metodoPagamento;
-    }
-
-    public String getBanco()
-    {
-        return banco;
-    }
-
-    public void setBanco(String banco)
-    {
-        this.banco = banco;
-    }
-
-    public String getAgencia()
-    {
-        return agencia;
-    }
-
-    public void setAgencia(String agencia)
-    {
-        this.agencia = agencia;
-    }
-
-    public String getContaCorrente()
-    {
-        return contaCorrente;
-    }
-
-    public void setContaCorrente(String contaCorrente)
-    {
-        this.contaCorrente = contaCorrente;
-    }
-
-    public String[] getDatasCartoes()
-    {
-        return datasCartoes;
-    }
-
-    public double[] getHorasCartoes()
-    {
-        return horasCartoes;
-    }
-
-    public int getQtdCartoes()
-    {
-        return qtdCartoes;
-    }
-
-    public String[] getDatasVendas()
-    {
-        return datasVendas;
-    }
-
-    public double[] getValoresVendas()
-    {
-        return valoresVendas;
-    }
-
-    public int getQtdVendas()
-    {
-        return qtdVendas;
-    }
-
-    public String getSindicalizado()
-    {
-        return sindicalizado;
-    }
-
-    public void setSindicalizado(String sindicalizado)
-    {
-        this.sindicalizado = sindicalizado;
-    }
-
-    public String getIdSindicato()
-    {
-        return idSindicato;
-    }
-
-    public void setIdSindicato(String idSindicato)
-    {
-        this.idSindicato = idSindicato;
-    }
-
-    public String getTaxaSindical()
-    {
-        return taxaSindical;
-    }
-
-    public void setTaxaSindical(String taxaSindical)
-    {
-        this.taxaSindical = taxaSindical;
-    }
-
-    public String[] getDatasTaxas()
-    {
-        return datasTaxas;
-    }
-
-    public double[] getValoresTaxas()
-    {
-        return valoresTaxas;
-    }
-
-    public int getQtdTaxas()
-    {
-        return qtdTaxas;
     }
 }
