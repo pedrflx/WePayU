@@ -1,6 +1,6 @@
 package br.ufal.ic.p2.wepayu;
 
-import br.ufal.ic.p2.wepayu.Exception.EmpregadoNaoExisteException;
+import br.ufal.ic.p2.wepayu.Exception.*;
 import br.ufal.ic.p2.wepayu.models.Empregado;
 import java.util.Date;
 
@@ -76,12 +76,12 @@ public class Facade
     {
         if (encerrado)
         {
-            throw new Exception("Nao pode dar comandos depois de encerrarSistema.");
+            throw new SistemaEncerradoException();
         }
 
         if (currentState <= 0)
         {
-            throw new Exception("Nao ha comando a desfazer.");
+            throw new NenhumComandoParaDesfazerException();
         }
 
         currentState--;
@@ -92,12 +92,12 @@ public class Facade
     {
         if (encerrado)
         {
-            throw new Exception("Nao pode dar comandos depois de encerrarSistema.");
+            throw new SistemaEncerradoException();
         }
 
         if (currentState >= maxState)
         {
-            throw new Exception("Nao ha comando a refazer.");
+            throw new NenhumComandoParaRefazerException();
         }
 
         currentState++;
@@ -132,7 +132,7 @@ public class Facade
     {
         int ind;
         try { ind = Integer.parseInt(indice); }
-        catch(Exception e) { throw new Exception("Indice invalido."); }
+        catch(Exception e) { throw new IndiceInvalidoException(); }
 
         int count = 0;
         for (int i = 1; i < proximoId; i++)
@@ -143,25 +143,25 @@ public class Facade
                 if (count == ind) return String.valueOf(i);
             }
         }
-        throw new Exception("Empregado nao existe.");
+        throw new EmpregadoNaoEncontradoPorNomeException();
     }
 
     public String criarEmpregado(String nome, String endereco, String tipo, String salario) throws Exception
     {
-        if (nome == null || nome.isEmpty()) throw new Exception("Nome nao pode ser nulo.");
-        if (endereco == null || endereco.isEmpty()) throw new Exception("Endereco nao pode ser nulo.");
-        if (tipo.equals("comissionado")) throw new Exception("Tipo nao aplicavel.");
-        if (!tipo.equals("horista") && !tipo.equals("assalariado")) throw new Exception("Tipo invalido.");
-        if (salario == null || salario.isEmpty()) throw new Exception("Salario nao pode ser nulo.");
+        if (nome == null || nome.isEmpty()) throw new NomeNuloException();
+        if (endereco == null || endereco.isEmpty()) throw new EnderecoNuloException();
+        if (tipo.equals("comissionado")) throw new TipoNaoAplicavelException();
+        if (!tipo.equals("horista") && !tipo.equals("assalariado")) throw new TipoInvalidoException();
+        if (salario == null || salario.isEmpty()) throw new SalarioNuloException();
 
         try
         {
             double salValor = Double.parseDouble(salario.replace(",", "."));
-            if (salValor < 0) throw new Exception("Salario deve ser nao-negativo.");
+            if (salValor < 0) throw new SalarioNegativoException();
         }
         catch (NumberFormatException e)
         {
-            throw new Exception("Salario deve ser numerico.");
+            throw new SalarioNaoNumericoException();
         }
 
         empregados[proximoId] = new Empregado(nome, endereco, tipo, salario);
@@ -176,32 +176,32 @@ public class Facade
 
     public String criarEmpregado(String nome, String endereco, String tipo, String salario, String comissao) throws Exception
     {
-        if (nome == null || nome.isEmpty()) throw new Exception("Nome nao pode ser nulo.");
-        if (endereco == null || endereco.isEmpty()) throw new Exception("Endereco nao pode ser nulo.");
-        if (tipo.equals("horista") || tipo.equals("assalariado")) throw new Exception("Tipo nao aplicavel.");
-        if (!tipo.equals("comissionado")) throw new Exception("Tipo invalido.");
-        if (salario == null || salario.isEmpty()) throw new Exception("Salario nao pode ser nulo.");
+        if (nome == null || nome.isEmpty()) throw new NomeNuloException();
+        if (endereco == null || endereco.isEmpty()) throw new EnderecoNuloException();
+        if (tipo.equals("horista") || tipo.equals("assalariado")) throw new TipoNaoAplicavelException();
+        if (!tipo.equals("comissionado")) throw new TipoInvalidoException();
+        if (salario == null || salario.isEmpty()) throw new SalarioNuloException();
 
         try
         {
             double salValor = Double.parseDouble(salario.replace(",", "."));
-            if (salValor < 0) throw new Exception("Salario deve ser nao-negativo.");
+            if (salValor < 0) throw new SalarioNegativoException();
         }
         catch (NumberFormatException e)
         {
-            throw new Exception("Salario deve ser numerico.");
+            throw new SalarioNaoNumericoException();
         }
 
-        if (comissao == null || comissao.isEmpty()) throw new Exception("Comissao nao pode ser nula.");
+        if (comissao == null || comissao.isEmpty()) throw new ComissaoNulaException();
 
         try
         {
             double comValor = Double.parseDouble(comissao.replace(",", "."));
-            if (comValor < 0) throw new Exception("Comissao deve ser nao-negativa.");
+            if (comValor < 0) throw new ComissaoNegativaException();
         }
         catch (NumberFormatException e)
         {
-            throw new Exception("Comissao deve ser numerica.");
+            throw new ComissaoNaoNumericaException();
         }
 
         empregados[proximoId] = new Empregado(nome, endereco, tipo, salario, comissao);
@@ -218,7 +218,7 @@ public class Facade
     {
         if (emp == null || emp.isEmpty())
         {
-            throw new Exception("Identificacao do empregado nao pode ser nula.");
+            throw new IdentificacaoEmpregadoNulaException();
         }
 
         int id;
@@ -245,7 +245,7 @@ public class Facade
     {
         if (emp == null || emp.isEmpty())
         {
-            throw new Exception("Identificacao do empregado nao pode ser nula.");
+            throw new IdentificacaoEmpregadoNulaException();
         }
 
         int id;
@@ -284,12 +284,12 @@ public class Facade
         }
         else if (atributo.equals("idSindicato"))
         {
-            if (empregadoTemporario.getSindicalizado().equals("false")) throw new Exception("Empregado nao eh sindicalizado.");
+            if (empregadoTemporario.getSindicalizado().equals("false")) throw new EmpregadoNaoEhSindicalizadoException();
             return empregadoTemporario.getIdSindicato();
         }
         else if (atributo.equals("taxaSindical"))
         {
-            if (empregadoTemporario.getSindicalizado().equals("false")) throw new Exception("Empregado nao eh sindicalizado.");
+            if (empregadoTemporario.getSindicalizado().equals("false")) throw new EmpregadoNaoEhSindicalizadoException();
             String taxa = empregadoTemporario.getTaxaSindical();
             if (!taxa.contains(",")) return taxa + ",00";
             return taxa;
@@ -305,7 +305,7 @@ public class Facade
         }
         else if (atributo.equals("comissao"))
         {
-            if (!empregadoTemporario.getTipo().equals("comissionado")) throw new Exception("Empregado nao eh comissionado.");
+            if (!empregadoTemporario.getTipo().equals("comissionado")) throw new EmpregadoNaoEhComissionadoException();
             return empregadoTemporario.getComissao();
         }
         else if (atributo.equals("metodoPagamento"))
@@ -314,18 +314,18 @@ public class Facade
         }
         else if (atributo.equals("banco") || atributo.equals("agencia") || atributo.equals("contaCorrente"))
         {
-            if (!empregadoTemporario.getMetodoPagamento().equals("banco")) throw new Exception("Empregado nao recebe em banco.");
+            if (!empregadoTemporario.getMetodoPagamento().equals("banco")) throw new EmpregadoNaoRecebeEmBancoException();
             if (atributo.equals("banco")) return empregadoTemporario.getBanco();
             if (atributo.equals("agencia")) return empregadoTemporario.getAgencia();
             if (atributo.equals("contaCorrente")) return empregadoTemporario.getContaCorrente();
         }
 
-        throw new Exception("Atributo nao existe.");
+        throw new AtributoNaoExisteException();
     }
 
     public void lancaCartao(String emp, String data, String horas) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -344,7 +344,7 @@ public class Facade
 
         if (!empregadoTemporario.getTipo().equals("horista"))
         {
-            throw new Exception("Empregado nao eh horista.");
+            throw new EmpregadoNaoEhHoristaException();
         }
 
         try
@@ -355,7 +355,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data invalida.");
+            throw new DataInvalidaException();
         }
 
         double horasTrabalhadas;
@@ -363,11 +363,11 @@ public class Facade
         try
         {
             horasTrabalhadas = Double.parseDouble(horas.replace(",", "."));
-            if (horasTrabalhadas <= 0) throw new Exception("Horas devem ser positivas.");
+            if (horasTrabalhadas <= 0) throw new HorasNaoPositivasException();
         }
         catch (Exception e)
         {
-            throw new Exception("Horas devem ser positivas.");
+            throw new HorasNaoPositivasException();
         }
 
         empregadoTemporario.registrarCartao(data, horasTrabalhadas);
@@ -376,7 +376,7 @@ public class Facade
 
     public String getHorasNormaisTrabalhadas(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
         int id;
 
         try
@@ -393,7 +393,7 @@ public class Facade
 
         if (!empregadoTemporario.getTipo().equals("horista"))
         {
-            throw new Exception("Empregado nao eh horista.");
+            throw new EmpregadoNaoEhHoristaException();
         }
 
         Date dataIni;
@@ -406,7 +406,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data inicial invalida.");
+            throw new DataInicialInvalidaException();
         }
 
         Date dataFim;
@@ -419,12 +419,12 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data final invalida.");
+            throw new DataFinalInvalidaException();
         }
 
         if (dataIni.after(dataFim))
         {
-            throw new Exception("Data inicial nao pode ser posterior aa data final.");
+            throw new DataInicialPosteriorException();
         }
 
         double horasNormais = 0;
@@ -460,7 +460,7 @@ public class Facade
 
     public String getHorasExtrasTrabalhadas(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -479,7 +479,7 @@ public class Facade
 
         if (!empregadoTemporario.getTipo().equals("horista"))
         {
-            throw new Exception("Empregado nao eh horista.");
+            throw new EmpregadoNaoEhHoristaException();
         }
 
         Date dataIni;
@@ -492,7 +492,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data inicial invalida.");
+            throw new DataInicialInvalidaException();
         }
 
         Date dataFim;
@@ -505,12 +505,12 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data final invalida.");
+            throw new DataFinalInvalidaException();
         }
 
         if (dataIni.after(dataFim))
         {
-            throw new Exception("Data inicial nao pode ser posterior aa data final.");
+            throw new DataInicialPosteriorException();
         }
 
         double horasExtras = 0;
@@ -542,7 +542,7 @@ public class Facade
 
     public void lancaVenda(String emp, String data, String valor) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -561,7 +561,7 @@ public class Facade
 
         if (!empregadoTemporario.getTipo().equals("comissionado"))
         {
-            throw new Exception("Empregado nao eh comissionado.");
+            throw new EmpregadoNaoEhComissionadoException();
         }
 
         try
@@ -572,7 +572,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data invalida.");
+            throw new DataInvalidaException();
         }
 
         double valorVenda;
@@ -580,11 +580,11 @@ public class Facade
         try
         {
             valorVenda = Double.parseDouble(valor.replace(",", "."));
-            if (valorVenda <= 0) throw new Exception("Valor deve ser positivo.");
+            if (valorVenda <= 0) throw new ValorNaoPositivoException();
         }
         catch (Exception e)
         {
-            throw new Exception("Valor deve ser positivo.");
+            throw new ValorNaoPositivoException();
         }
 
         empregadoTemporario.registrarVenda(data, valorVenda);
@@ -593,7 +593,7 @@ public class Facade
 
     public String getVendasRealizadas(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -612,7 +612,7 @@ public class Facade
 
         if (!empregadoTemporario.getTipo().equals("comissionado"))
         {
-            throw new Exception("Empregado nao eh comissionado.");
+            throw new EmpregadoNaoEhComissionadoException();
         }
 
         Date dataIni;
@@ -625,7 +625,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data inicial invalida.");
+            throw new DataInicialInvalidaException();
         }
 
         Date dataFim;
@@ -638,12 +638,12 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data final invalida.");
+            throw new DataFinalInvalidaException();
         }
 
         if (dataIni.after(dataFim))
         {
-            throw new Exception("Data inicial nao pode ser posterior aa data final.");
+            throw new DataInicialPosteriorException();
         }
 
         double totalVendas = 0;
@@ -664,7 +664,7 @@ public class Facade
 
     public void alteraEmpregado(String emp, String atributo, String valor) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -683,56 +683,56 @@ public class Facade
 
         if (atributo.equals("nome"))
         {
-            if (valor == null || valor.isEmpty()) throw new Exception("Nome nao pode ser nulo.");
+            if (valor == null || valor.isEmpty()) throw new NomeNuloException();
             empregadoTemporario.setNome(valor);
         }
         else if (atributo.equals("endereco"))
         {
-            if (valor == null || valor.isEmpty()) throw new Exception("Endereco nao pode ser nulo.");
+            if (valor == null || valor.isEmpty()) throw new EnderecoNuloException();
             empregadoTemporario.setEndereco(valor);
         }
         else if (atributo.equals("tipo"))
         {
-            if (!valor.equals("horista") && !valor.equals("assalariado") && !valor.equals("comissionado")) throw new Exception("Tipo invalido.");
+            if (!valor.equals("horista") && !valor.equals("assalariado") && !valor.equals("comissionado")) throw new TipoInvalidoException();
             empregadoTemporario.setTipo(valor);
         }
         else if (atributo.equals("salario"))
         {
-            if (valor == null || valor.isEmpty()) throw new Exception("Salario nao pode ser nulo.");
+            if (valor == null || valor.isEmpty()) throw new SalarioNuloException();
             try
             {
                 double v = Double.parseDouble(valor.replace(",", "."));
-                if (v < 0) throw new Exception("Salario deve ser nao-negativo.");
+                if (v < 0) throw new SalarioNegativoException();
             }
             catch (NumberFormatException e)
             {
-                throw new Exception("Salario deve ser numerico.");
+                throw new SalarioNaoNumericoException();
             }
             empregadoTemporario.setSalario(valor);
         }
         else if (atributo.equals("comissao"))
         {
-            if (!empregadoTemporario.getTipo().equals("comissionado")) throw new Exception("Empregado nao eh comissionado.");
-            if (valor == null || valor.isEmpty()) throw new Exception("Comissao nao pode ser nula.");
+            if (!empregadoTemporario.getTipo().equals("comissionado")) throw new EmpregadoNaoEhComissionadoException();
+            if (valor == null || valor.isEmpty()) throw new ComissaoNulaException();
             try
             {
                 double v = Double.parseDouble(valor.replace(",", "."));
-                if (v < 0) throw new Exception("Comissao deve ser nao-negativa.");
+                if (v < 0) throw new ComissaoNegativaException();
             }
             catch (NumberFormatException e)
             {
-                throw new Exception("Comissao deve ser numerica.");
+                throw new ComissaoNaoNumericaException();
             }
             empregadoTemporario.setComissao(valor);
         }
         else if (atributo.equals("metodoPagamento"))
         {
-            if (!valor.equals("correios") && !valor.equals("emMaos") && !valor.equals("banco")) throw new Exception("Metodo de pagamento invalido.");
+            if (!valor.equals("correios") && !valor.equals("emMaos") && !valor.equals("banco")) throw new MetodoPagamentoInvalidoException();
             empregadoTemporario.setMetodoPagamento(valor);
         }
         else if (atributo.equals("sindicalizado"))
         {
-            if (!valor.equals("true") && !valor.equals("false")) throw new Exception("Valor deve ser true ou false.");
+            if (!valor.equals("true") && !valor.equals("false")) throw new ValorNaoBooleanoException();
             if (valor.equals("false"))
             {
                 empregadoTemporario.setSindicalizado("false");
@@ -742,7 +742,7 @@ public class Facade
         }
         else
         {
-            throw new Exception("Atributo nao existe.");
+            throw new AtributoNaoExisteException();
         }
 
         saveState();
@@ -750,7 +750,7 @@ public class Facade
 
     public void alteraEmpregado(String emp, String atributo, String valor, String ext) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -781,12 +781,12 @@ public class Facade
             }
             else
             {
-                throw new Exception("Tipo invalido.");
+                throw new TipoInvalidoException();
             }
         }
         else
         {
-            throw new Exception("Atributo nao existe.");
+            throw new AtributoNaoExisteException();
         }
 
         saveState();
@@ -794,7 +794,7 @@ public class Facade
 
     public void alteraEmpregado(String emp, String atributo, String valor, String idSindicato, String taxaSindical) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -811,26 +811,26 @@ public class Facade
 
         if (atributo.equals("sindicalizado"))
         {
-            if (!valor.equals("true") && !valor.equals("false")) throw new Exception("Valor deve ser true ou false.");
+            if (!valor.equals("true") && !valor.equals("false")) throw new ValorNaoBooleanoException();
             if (valor.equals("true"))
             {
-                if (idSindicato == null || idSindicato.isEmpty()) throw new Exception("Identificacao do sindicato nao pode ser nula.");
-                if (taxaSindical == null || taxaSindical.isEmpty()) throw new Exception("Taxa sindical nao pode ser nula.");
+                if (idSindicato == null || idSindicato.isEmpty()) throw new IdentificacaoSindicatoNulaException();
+                if (taxaSindical == null || taxaSindical.isEmpty()) throw new TaxaSindicalNulaException();
                 try
                 {
                     double taxa = Double.parseDouble(taxaSindical.replace(",", "."));
-                    if (taxa < 0) throw new Exception("Taxa sindical deve ser nao-negativa.");
+                    if (taxa < 0) throw new TaxaSindicalNegativaException();
                 }
                 catch (NumberFormatException e)
                 {
-                    throw new Exception("Taxa sindical deve ser numerica.");
+                    throw new TaxaSindicalNaoNumericaException();
                 }
 
                 for (int i = 1; i < proximoId; i++)
                 {
                     if (empregados[i] != null && idSindicato.equals(empregados[i].getIdSindicato()))
                     {
-                        throw new Exception("Ha outro empregado com esta identificacao de sindicato");
+                        throw new IdSindicatoDuplicadoException();
                     }
                 }
 
@@ -842,7 +842,7 @@ public class Facade
         }
         else
         {
-            throw new Exception("Atributo nao existe.");
+            throw new AtributoNaoExisteException();
         }
 
         saveState();
@@ -850,7 +850,7 @@ public class Facade
 
     public void alteraEmpregado(String emp, String atributo, String valor, String banco, String agencia, String contaCorrente) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -869,9 +869,9 @@ public class Facade
 
         if (atributo.equals("metodoPagamento") && valor.equals("banco"))
         {
-            if (banco == null || banco.isEmpty()) throw new Exception("Banco nao pode ser nulo.");
-            if (agencia == null || agencia.isEmpty()) throw new Exception("Agencia nao pode ser nulo.");
-            if (contaCorrente == null || contaCorrente.isEmpty()) throw new Exception("Conta corrente nao pode ser nulo.");
+            if (banco == null || banco.isEmpty()) throw new BancoNuloException();
+            if (agencia == null || agencia.isEmpty()) throw new AgenciaNulaException();
+            if (contaCorrente == null || contaCorrente.isEmpty()) throw new ContaCorrenteNulaException();
 
             empregadoTemporario.setMetodoPagamento(valor);
             empregadoTemporario.setBanco(banco);
@@ -880,7 +880,7 @@ public class Facade
         }
         else
         {
-            throw new Exception("Atributo nao existe.");
+            throw new AtributoNaoExisteException();
         }
 
         saveState();
@@ -888,7 +888,7 @@ public class Facade
 
     public void lancaTaxaServico(String membro, String data, String valor) throws Exception
     {
-        if (membro == null || membro.isEmpty()) throw new Exception("Identificacao do membro nao pode ser nula.");
+        if (membro == null || membro.isEmpty()) throw new IdentificacaoMembroNulaException();
 
         Empregado empMembro = null;
 
@@ -901,7 +901,7 @@ public class Facade
             }
         }
 
-        if (empMembro == null) throw new Exception("Membro nao existe.");
+        if (empMembro == null) throw new MembroNaoExisteException();
 
         try
         {
@@ -911,7 +911,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data invalida.");
+            throw new DataInvalidaException();
         }
 
         double valorTaxa;
@@ -919,11 +919,11 @@ public class Facade
         try
         {
             valorTaxa = Double.parseDouble(valor.replace(",", "."));
-            if (valorTaxa <= 0) throw new Exception("Valor deve ser positivo.");
+            if (valorTaxa <= 0) throw new ValorNaoPositivoException();
         }
         catch (Exception e)
         {
-            throw new Exception("Valor deve ser positivo.");
+            throw new ValorNaoPositivoException();
         }
 
         empMembro.registrarTaxa(data, valorTaxa);
@@ -932,7 +932,7 @@ public class Facade
 
     public String getTaxasServico(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        if (emp == null || emp.isEmpty()) throw new Exception("Identificacao do empregado nao pode ser nula.");
+        if (emp == null || emp.isEmpty()) throw new IdentificacaoEmpregadoNulaException();
 
         int id;
 
@@ -951,7 +951,7 @@ public class Facade
 
         if (empregadoTemporario.getSindicalizado().equals("false"))
         {
-            throw new Exception("Empregado nao eh sindicalizado.");
+            throw new EmpregadoNaoEhSindicalizadoException();
         }
 
         Date dataIni;
@@ -964,7 +964,7 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data inicial invalida.");
+            throw new DataInicialInvalidaException();
         }
 
         Date dataFim;
@@ -977,12 +977,12 @@ public class Facade
         }
         catch (Exception e)
         {
-            throw new Exception("Data final invalida.");
+            throw new DataFinalInvalidaException();
         }
 
         if (dataIni.after(dataFim))
         {
-            throw new Exception("Data inicial nao pode ser posterior aa data final.");
+            throw new DataInicialPosteriorException();
         }
 
         double totalTaxas = 0;
