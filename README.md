@@ -1,11 +1,7 @@
 # WePayU
 
 Sistema de folha de pagamento desenvolvido para a disciplina de Programação 2.
-Implementa as user stories 1 a 8 e passa em todos os testes de aceitação (us1 a us8 e us1_1 a us6_1).
-
-## Como rodar
-
-Abrir o projeto no IntelliJ e executar a classe `Main`, que roda os testes com o EasyAccept (`lib/easyaccept.jar`).
+Implementa as user stories 1 a 8 e passa em todos os testes de aceitação e persistência (us1 a us8 e us1_1 a us6_1).
 
 ## Estratégia de desenvolvimento
 
