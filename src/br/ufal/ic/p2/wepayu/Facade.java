@@ -1,28 +1,22 @@
 package br.ufal.ic.p2.wepayu;
 
 import br.ufal.ic.p2.wepayu.Exception.*;
-import br.ufal.ic.p2.wepayu.models.Banco;
-import br.ufal.ic.p2.wepayu.models.Correios;
-import br.ufal.ic.p2.wepayu.models.EmMaos;
-import br.ufal.ic.p2.wepayu.models.Empregado;
-import br.ufal.ic.p2.wepayu.models.EmpregadoAssalariado;
-import br.ufal.ic.p2.wepayu.models.EmpregadoComissionado;
-import br.ufal.ic.p2.wepayu.models.EmpregadoHorista;
-import br.ufal.ic.p2.wepayu.models.FolhaDePagamento;
-import br.ufal.ic.p2.wepayu.models.MembroSindicato;
-import br.ufal.ic.p2.wepayu.models.MetodoPagamento;
+import br.ufal.ic.p2.wepayu.models.empregados.Empregado;
+import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
 import br.ufal.ic.p2.wepayu.persistencia.PersistenciaXML;
+import br.ufal.ic.p2.wepayu.sistema.FabricaEmpregado;
+import br.ufal.ic.p2.wepayu.sistema.Historico;
+import br.ufal.ic.p2.wepayu.sistema.RepositorioEmpregados;
+import br.ufal.ic.p2.wepayu.sistema.Sindicato;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
-import java.util.ArrayList;
-import java.util.Date;
 
 public class Facade
 {
 
     private PersistenciaXML persistencia = new PersistenciaXML("dados.xml");
-    private ArrayList<Empregado> empregados;
-    private ArrayList<ArrayList<Empregado>> historico = new ArrayList<>();
-    private int estadoAtual = 0;
+    private RepositorioEmpregados repositorio;
+    private Historico historico;
+    private Sindicato sindicato;
     private boolean encerrado = false;
 
     /*
@@ -33,42 +27,20 @@ public class Facade
 
     public Facade() throws Exception
     {
-        empregados = persistencia.carregar();
-        historico.add(copiarEmpregados(empregados));
-    }
-
-    private ArrayList<Empregado> copiarEmpregados(ArrayList<Empregado> origem)
-    {
-        ArrayList<Empregado> copia = new ArrayList<>();
-        for (Empregado empregado : origem)
-        {
-            if (empregado == null)
-            {
-                copia.add(null);
-            }
-            else
-            {
-                copia.add(empregado.clonar());
-            }
-        }
-        return copia;
+        repositorio = new RepositorioEmpregados(persistencia.carregar());
+        historico = new Historico(repositorio.getEmpregados());
+        sindicato = new Sindicato(repositorio);
     }
 
     /*
         salvarEstado
-        guarda uma cópia da lista atual no histórico, é chamado depois de cada comando que altera alguma coisa
-        se houve undo antes, apaga os estados que estavam na frente para o redo não refazer algo que não vale mais
+        (aTUALIZAÇÃO) pede ao histórico para guardar uma cópia da lista atual, é chamado depois de cada comando que altera alguma coisa
+        comandos que dão erro param antes de chegar aqui, por isso não entram no undo
     */
 
     private void salvarEstado()
     {
-        while (historico.size() > estadoAtual + 1)
-        {
-            historico.remove(historico.size() - 1);
-        }
-
-        historico.add(copiarEmpregados(empregados));
-        estadoAtual++;
+        historico.salvar(repositorio.getEmpregados());
     }
 
     private void verificarSistemaAtivo() throws WePayUException
@@ -88,14 +60,7 @@ public class Facade
     public void undo() throws Exception
     {
         verificarSistemaAtivo();
-
-        if (estadoAtual <= 0)
-        {
-            throw new NenhumComandoParaDesfazerException();
-        }
-
-        estadoAtual--;
-        empregados = copiarEmpregados(historico.get(estadoAtual));
+        repositorio.restaurar(historico.desfazer());    // o histórico devolve a lista daquele momento, e o repositório passa a usar ela
     }
 
     /*
@@ -108,13 +73,7 @@ public class Facade
     {
         verificarSistemaAtivo();
 
-        if (estadoAtual >= historico.size() - 1)
-        {
-            throw new NenhumComandoParaRefazerException();
-        }
-
-        estadoAtual++;
-        empregados = copiarEmpregados(historico.get(estadoAtual));
+        repositorio.restaurar(historico.refazer());
     }
 
     /*
@@ -125,7 +84,7 @@ public class Facade
 
     public void zerarSistema()
     {
-        empregados = new ArrayList<>();
+        repositorio.zerar();
         encerrado = false;
 
         salvarEstado();
@@ -139,193 +98,53 @@ public class Facade
 
     public void encerrarSistema() throws Exception
     {
-        persistencia.salvar(empregados);
+        persistencia.salvar(repositorio.getEmpregados());
         encerrado = true;
     }
 
-    /*
-        buscarPosicao
-        transforma o id que vem do teste na posição do empregado na lista
-        o id é a posição + 1, então o empregado de id 1 fica na posição 0
-        lança IdentificacaoEmpregadoNulaException se o id vier vazio e EmpregadoNaoExisteException se não for número, estiver fora da lista ou o empregado tiver sido removido
-    */
-
-    private int buscarPosicao(String emp) throws WePayUException
-    {
-        Conversor.validarTexto(emp, new IdentificacaoEmpregadoNulaException());
-
-        int id = Conversor.converterInteiro(emp, new EmpregadoNaoExisteException());
-
-        if (id <= 0 || id > empregados.size() || empregados.get(id - 1) == null)
-        {
-            throw new EmpregadoNaoExisteException();
-        }
-
-        return id - 1;
-    }
-
-    private Empregado buscarEmpregado(String emp) throws WePayUException
-    {
-        return empregados.get(buscarPosicao(emp));
-    }
 
     private String adicionarEmpregado(Empregado novo)
     {
-        empregados.add(novo);
+        String id = repositorio.adicionar(novo);
         salvarEstado();
 
-        return String.valueOf(empregados.size());
-    }
-
-    /*
-        converterTipo
-        cria um empregado novo do tipo pedido copiando os dados comuns do empregado atual
-        é usado para trocar o tipo, já que um objeto não pode mudar de classe
-        lança TipoInvalidoException se o tipo não for horista, assalariado ou comissionado
-    */
-
-    private Empregado converterTipo(Empregado empregado, String tipo) throws WePayUException
-    {
-        if (tipo.equals("horista")) return new EmpregadoHorista(empregado);
-        if (tipo.equals("assalariado")) return new EmpregadoAssalariado(empregado);
-        if (tipo.equals("comissionado")) return new EmpregadoComissionado(empregado);
-        throw new TipoInvalidoException();
-    }
-
-    private MetodoPagamento converterMetodoPagamento(String metodo) throws WePayUException
-    {
-        if (metodo.equals("emMaos")) return new EmMaos();
-        if (metodo.equals("correios")) return new Correios();
-        throw new MetodoPagamentoInvalidoException();
-    }
-
-    private Empregado buscarMembro(String idMembro)
-    {
-        for (Empregado empregado : empregados)
-        {
-            if (empregado != null && empregado.pertenceAoSindicato(idMembro))
-            {
-                return empregado;
-            }
-        }
-        return null;
-    }
-
-    private String completarCentavos(String valor)
-    {
-        if (!valor.contains(","))
-        {
-            return valor + ",00";
-        }
-        return valor;
+        return id;
     }
 
     public String getNumeroDeEmpregados() throws Exception
     {
-        int count = 0;
-        for (Empregado empregado : empregados)
-        {
-            if (empregado != null) count++;
-        }
-        return String.valueOf(count);
+        return String.valueOf(repositorio.contar());
     }
 
     public String getEmpregadoPorNome(String nome, String indice) throws Exception
     {
-        int ind = Conversor.converterInteiro(indice, new IndiceInvalidoException());
-
-        int count = 0;
-        for (int i = 0; i < empregados.size(); i++)
-        {
-            if (empregados.get(i) != null && empregados.get(i).getNome().equals(nome))
-            {
-                count++;
-                if (count == ind) return String.valueOf(i + 1);
-            }
-        }
-        throw new EmpregadoNaoEncontradoPorNomeException();
+        return repositorio.buscarIdPorNome(nome, indice);
     }
 
     public String criarEmpregado(String nome, String endereco, String tipo, String salario) throws Exception
     {
-        if (tipo.equals("horista")) return adicionarEmpregado(new EmpregadoHorista(nome, endereco, salario));
-        if (tipo.equals("assalariado")) return adicionarEmpregado(new EmpregadoAssalariado(nome, endereco, salario));
-        if (tipo.equals("comissionado")) throw new TipoNaoAplicavelException();
-        throw new TipoInvalidoException();
+        return adicionarEmpregado(FabricaEmpregado.criar(nome, endereco, tipo, salario));
     }
 
     public String criarEmpregado(String nome, String endereco, String tipo, String salario, String comissao) throws Exception
     {
-        if (tipo.equals("comissionado")) return adicionarEmpregado(new EmpregadoComissionado(nome, endereco, salario, comissao));
-        if (tipo.equals("horista") || tipo.equals("assalariado")) throw new TipoNaoAplicavelException();
-        throw new TipoInvalidoException();
+        return adicionarEmpregado(FabricaEmpregado.criar(nome, endereco, tipo, salario, comissao));
     }
 
-    /*
+        /*
         removerEmpregado
-        coloca null na posição do empregado em vez de apagar, assim os ids dos outros empregados não mudam
+        (atualizado)  o repositório coloca null na posição do empregado em vez de apagar, assim os ids dos outros empregados não mudam
     */
 
     public void removerEmpregado(String emp) throws Exception
     {
-        empregados.set(buscarPosicao(emp), null);
+        repositorio.remover(emp);
         salvarEstado();
     }
 
     public String getAtributoEmpregado(String emp, String atributo) throws Exception
     {
-        Empregado empregadoTemporario = buscarEmpregado(emp);
-
-        if (atributo.equals("nome"))
-        {
-            return empregadoTemporario.getNome();
-        }
-        else if (atributo.equals("endereco"))
-        {
-            return empregadoTemporario.getEndereco();
-        }
-        else if (atributo.equals("tipo"))
-        {
-            return empregadoTemporario.getTipo();
-        }
-        else if (atributo.equals("sindicalizado"))
-        {
-            return empregadoTemporario.getSindicalizado();
-        }
-        else if (atributo.equals("idSindicato"))
-        {
-            return empregadoTemporario.getIdSindicato();
-        }
-        else if (atributo.equals("taxaSindical"))
-        {
-            return completarCentavos(empregadoTemporario.getTaxaSindical());
-        }
-        else if (atributo.equals("salario"))
-        {
-            return completarCentavos(empregadoTemporario.getSalario());
-        }
-        else if (atributo.equals("comissao"))
-        {
-            return empregadoTemporario.getComissao();
-        }
-        else if (atributo.equals("metodoPagamento"))
-        {
-            return empregadoTemporario.getMetodoPagamento().getNome();
-        }
-        else if (atributo.equals("banco"))
-        {
-            return empregadoTemporario.getMetodoPagamento().getBanco();
-        }
-        else if (atributo.equals("agencia"))
-        {
-            return empregadoTemporario.getMetodoPagamento().getAgencia();
-        }
-        else if (atributo.equals("contaCorrente"))
-        {
-            return empregadoTemporario.getMetodoPagamento().getContaCorrente();
-        }
-
-        throw new AtributoNaoExisteException();
+        return repositorio.buscar(emp).getAtributo(atributo);
     }
 
     /*
@@ -337,71 +156,43 @@ public class Facade
 
     public void lancaCartao(String emp, String data, String horas) throws Exception
     {
-        buscarEmpregado(emp).registrarCartao(data, horas);
+        repositorio.buscar(emp).registrarCartao(data, horas);
         salvarEstado();
     }
 
     public String getHorasNormaisTrabalhadas(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        return buscarEmpregado(emp).getHorasNormaisTrabalhadas(dataInicial, dataFinal);
+        return repositorio.buscar(emp).getHorasNormaisTrabalhadas(dataInicial, dataFinal);
     }
 
     public String getHorasExtrasTrabalhadas(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        return buscarEmpregado(emp).getHorasExtrasTrabalhadas(dataInicial, dataFinal);
+        return repositorio.buscar(emp).getHorasExtrasTrabalhadas(dataInicial, dataFinal);
     }
 
     public void lancaVenda(String emp, String data, String valor) throws Exception
     {
-        buscarEmpregado(emp).registrarVenda(data, valor);
+        repositorio.buscar(emp).registrarVenda(data, valor);
         salvarEstado();
     }
 
     public String getVendasRealizadas(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        return buscarEmpregado(emp).getVendasRealizadas(dataInicial, dataFinal);
+        return repositorio.buscar(emp).getVendasRealizadas(dataInicial, dataFinal);
     }
 
     public void alteraEmpregado(String emp, String atributo, String valor) throws Exception
     {
-        int posicao = buscarPosicao(emp);
-        Empregado empregadoTemporario = empregados.get(posicao);
+        Empregado empregadoTemporario = repositorio.buscar(emp);
 
-        if (atributo.equals("nome"))
+        // trocar o tipo cria outro objeto, então quem faz é a fábrica. o resto o próprio empregado resolve
+        if (atributo.equals("tipo"))
         {
-            empregadoTemporario.setNome(valor);
-        }
-        else if (atributo.equals("endereco"))
-        {
-            empregadoTemporario.setEndereco(valor);
-        }
-        else if (atributo.equals("tipo"))
-        {
-            empregados.set(posicao, converterTipo(empregadoTemporario, valor));
-        }
-        else if (atributo.equals("salario"))
-        {
-            empregadoTemporario.setSalario(valor);
-        }
-        else if (atributo.equals("comissao"))
-        {
-            empregadoTemporario.alterarComissao(valor);
-        }
-        else if (atributo.equals("metodoPagamento"))
-        {
-            empregadoTemporario.setMetodoPagamento(converterMetodoPagamento(valor));
-        }
-        else if (atributo.equals("sindicalizado"))
-        {
-            if (!valor.equals("true") && !valor.equals("false")) throw new ValorNaoBooleanoException();
-            if (valor.equals("false"))
-            {
-                empregadoTemporario.setMembroSindicato(null);
-            }
+            repositorio.substituir(emp, FabricaEmpregado.converterTipo(empregadoTemporario, valor));
         }
         else
         {
-            throw new AtributoNaoExisteException();
+            empregadoTemporario.alterarAtributo(atributo, valor);
         }
 
         salvarEstado();
@@ -409,101 +200,59 @@ public class Facade
 
     public void alteraEmpregado(String emp, String atributo, String valor, String ext) throws Exception
     {
-        int posicao = buscarPosicao(emp);
+        Empregado empregadoTemporario = repositorio.buscar(emp);
 
         if (!atributo.equals("tipo"))
         {
             throw new AtributoNaoExisteException();
         }
 
-        Empregado novo = converterTipo(empregados.get(posicao), valor);
-
-        if (valor.equals("comissionado"))
-        {
-            novo.alterarComissao(ext);
-        }
-        else
-        {
-            novo.setSalario(ext);
-        }
-
-        empregados.set(posicao, novo);
+        repositorio.substituir(emp, FabricaEmpregado.converterTipo(empregadoTemporario, valor, ext));
         salvarEstado();
     }
 
     public void alteraEmpregado(String emp, String atributo, String valor, String idSindicato, String taxaSindical) throws Exception
     {
-        Empregado empregadoTemporario = buscarEmpregado(emp);
+        Empregado empregadoTemporario = repositorio.buscar(emp);
 
-        if (atributo.equals("sindicalizado"))
-        {
-            if (!valor.equals("true") && !valor.equals("false")) throw new ValorNaoBooleanoException();
-            if (valor.equals("true"))
-            {
-                MembroSindicato membro = new MembroSindicato(idSindicato, taxaSindical);
-
-                if (buscarMembro(idSindicato) != null)
-                {
-                    throw new IdSindicatoDuplicadoException();
-                }
-
-                empregadoTemporario.setMembroSindicato(membro);
-            }
-        }
-        else
+        if (!atributo.equals("sindicalizado"))
         {
             throw new AtributoNaoExisteException();
         }
 
+        sindicato.filiar(empregadoTemporario, valor, idSindicato, taxaSindical);
         salvarEstado();
     }
 
     public void alteraEmpregado(String emp, String atributo, String valor, String banco, String agencia, String contaCorrente) throws Exception
     {
-        Empregado empregadoTemporario = buscarEmpregado(emp);
-
-        if (atributo.equals("metodoPagamento") && valor.equals("banco"))
-        {
-            empregadoTemporario.setMetodoPagamento(new Banco(banco, agencia, contaCorrente));
-        }
-        else
-        {
-            throw new AtributoNaoExisteException();
-        }
-
+        repositorio.buscar(emp).alterarAtributo(atributo, valor, banco, agencia, contaCorrente);
         salvarEstado();
     }
 
     public void lancaTaxaServico(String membro, String data, String valor) throws Exception
     {
-        Conversor.validarTexto(membro, new IdentificacaoMembroNulaException());
-
-        Empregado empMembro = buscarMembro(membro);
-
-        if (empMembro == null) throw new MembroNaoExisteException();
-
-        empMembro.registrarTaxa(data, valor);
+        sindicato.buscarMembro(membro).registrarTaxa(data, valor);
         salvarEstado();
     }
 
     public String getTaxasServico(String emp, String dataInicial, String dataFinal) throws Exception
     {
-        return buscarEmpregado(emp).getTaxasServico(dataInicial, dataFinal);
+        return repositorio.buscar(emp).getTaxasServico(dataInicial, dataFinal);
+    }
+
+    // monta a folha do dia só com quem recebe nessa data
+    private FolhaDePagamento montarFolha(String data) throws WePayUException
+    {
+        FolhaDePagamento folha = new FolhaDePagamento(Conversor.converterData(data, new DataInvalidaException()));
+        folha.adicionarQuemRecebe(repositorio.getEmpregados());
+
+        return folha;
     }
 
     public String totalFolha(String data) throws Exception
     {
-        Date payday = Conversor.converterData(data, new DataInvalidaException());
-
-        double totalGeral = 0;
-        for (Empregado empregado : empregados)
-        {
-            if (empregado != null && empregado.ehDiaDePagamento(payday))
-            {
-                totalGeral += empregado.calcularSalarioBruto(payday);
-            }
-        }
-        return Conversor.formatarValor(totalGeral);
+        return Conversor.formatarValor(montarFolha(data).calcularTotal());
     }
 
     /*
@@ -514,21 +263,7 @@ public class Facade
 
     public void rodaFolha(String data, String saida) throws Exception
     {
-        Date payday = Conversor.converterData(data, new DataInvalidaException());
-        FolhaDePagamento folha = new FolhaDePagamento(payday);
-
-        for (Empregado empregado : empregados)
-        {
-            if (empregado != null && empregado.ehDiaDePagamento(payday))
-            {
-                folha.adicionar(empregado);
-            }
-        }
-
-        java.io.PrintWriter writer = new java.io.PrintWriter(saida, "UTF-8");
-        writer.print(folha.gerarRelatorio());
-        writer.close();
+        montarFolha(data).gravar(saida);
         salvarEstado();
     }
-
 }

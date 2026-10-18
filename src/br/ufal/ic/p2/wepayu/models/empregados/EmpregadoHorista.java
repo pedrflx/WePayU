@@ -1,10 +1,14 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.empregados;
 
 import br.ufal.ic.p2.wepayu.Exception.*;
+import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
+import br.ufal.ic.p2.wepayu.folha.SecaoFolha;
+import br.ufal.ic.p2.wepayu.models.lancamentos.CartaoDePonto;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
 
 /*
     EmpregadoHorista
@@ -16,10 +20,6 @@ public class EmpregadoHorista extends Empregado
 {
 
     private ArrayList<CartaoDePonto> cartoes = new ArrayList<>();
-
-    public EmpregadoHorista()
-    {
-    }
 
     public EmpregadoHorista(String nome, String endereco, String salario) throws WePayUException
     {
@@ -181,13 +181,15 @@ public class EmpregadoHorista extends Empregado
         return folha.getSecaoHoristas();
     }
 
-    public ArrayList<CartaoDePonto> getCartoes()
+    @Override
+    public void exportarPara(EmpregadoDTO dados)
     {
-        return cartoes;
+        super.exportarPara(dados);
+
+        for (CartaoDePonto cartao : cartoes)
+        {
+            dados.getCartoes().add(cartao.paraDTO());
+        }
     }
 
-    public void setCartoes(ArrayList<CartaoDePonto> cartoes)
-    {
-        this.cartoes = cartoes;
-    }
 }

@@ -1,5 +1,7 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.lancamentos;
 
+import br.ufal.ic.p2.wepayu.persistencia.LancamentoDTO;
+import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.Date;
 
 /*
@@ -13,10 +15,6 @@ public abstract class Lancamento
 
     private Date data;
     private double valor;
-
-    public Lancamento()
-    {
-    }
 
     public Lancamento(Date data, double valor)
     {
@@ -40,18 +38,16 @@ public abstract class Lancamento
         return data;
     }
 
-    public void setData(Date data)
-    {
-        this.data = data;
-    }
 
     public double getValor()
     {
         return valor;
     }
 
-    public void setValor(double valor)
+
+    // descreve o lançamento só com texto, para ir para o dados.xml
+    public LancamentoDTO paraDTO()
     {
-        this.valor = valor;
+        return new LancamentoDTO(Conversor.formatarData(data), String.valueOf(valor));
     }
 }

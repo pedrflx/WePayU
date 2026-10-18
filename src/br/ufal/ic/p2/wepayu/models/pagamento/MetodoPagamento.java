@@ -1,7 +1,9 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.pagamento;
 
+import br.ufal.ic.p2.wepayu.Exception.MetodoPagamentoInvalidoException;
 import br.ufal.ic.p2.wepayu.Exception.EmpregadoNaoRecebeEmBancoException;
 import br.ufal.ic.p2.wepayu.Exception.WePayUException;
+import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
 
 /*
     MetodoPagamento
@@ -11,6 +13,14 @@ import br.ufal.ic.p2.wepayu.Exception.WePayUException;
 
 public abstract class MetodoPagamento
 {
+
+    // transforma o texto do teste na forma de pagamento (o banco usa o construtor com os dados da conta)
+    public static MetodoPagamento criar(String metodo) throws WePayUException
+    {
+        if (metodo.equals("emMaos")) return new EmMaos();
+        if (metodo.equals("correios")) return new Correios();
+        throw new MetodoPagamentoInvalidoException();
+    }
 
     public abstract String getNome();
 
@@ -36,4 +46,11 @@ public abstract class MetodoPagamento
     {
         throw new EmpregadoNaoRecebeEmBancoException();
     }
+
+    // escreve no DTO como o empregado recebe. o Banco completa com os dados da conta
+    public void exportarPara(EmpregadoDTO dados)
+    {
+        dados.setMetodoPagamento(getNome());
+    }
+
 }

@@ -1,9 +1,11 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.sindicato;
 
 import br.ufal.ic.p2.wepayu.Exception.*;
+import br.ufal.ic.p2.wepayu.models.lancamentos.TaxaServico;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.ArrayList;
 import java.util.Date;
+import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
 
 /*
     MembroSindicato
@@ -18,9 +20,6 @@ public class MembroSindicato
     private String taxaSindical;
     private ArrayList<TaxaServico> taxas = new ArrayList<>();
 
-    public MembroSindicato()
-    {
-    }
 
     public MembroSindicato(String idMembro, String taxaSindical) throws WePayUException
     {
@@ -84,28 +83,21 @@ public class MembroSindicato
         return idMembro;
     }
 
-    public void setIdMembro(String idMembro)
-    {
-        this.idMembro = idMembro;
-    }
-
     public String getTaxaSindical()
     {
         return taxaSindical;
     }
 
-    public void setTaxaSindical(String taxaSindical)
+    // escreve no DTO o id, a taxa sindical e as taxas de serviço
+    public void exportarPara(EmpregadoDTO dados)
     {
-        this.taxaSindical = taxaSindical;
+        dados.setIdSindicato(idMembro);
+        dados.setTaxaSindical(taxaSindical);
+
+        for (TaxaServico taxa : taxas)
+        {
+            dados.getTaxas().add(taxa.paraDTO());
+        }
     }
 
-    public ArrayList<TaxaServico> getTaxas()
-    {
-        return taxas;
-    }
-
-    public void setTaxas(ArrayList<TaxaServico> taxas)
-    {
-        this.taxas = taxas;
-    }
 }

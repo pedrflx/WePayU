@@ -1,9 +1,13 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.empregados;
 
 import br.ufal.ic.p2.wepayu.Exception.*;
+import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
+import br.ufal.ic.p2.wepayu.folha.SecaoFolha;
+import br.ufal.ic.p2.wepayu.models.lancamentos.ResultadoDeVenda;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.ArrayList;
 import java.util.Date;
+import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
 
 /*
     EmpregadoComissionado
@@ -17,9 +21,6 @@ public class EmpregadoComissionado extends Empregado
     private String comissao;
     private ArrayList<ResultadoDeVenda> vendas = new ArrayList<>();
 
-    public EmpregadoComissionado()
-    {
-    }
 
     public EmpregadoComissionado(String nome, String endereco, String salario, String comissao) throws WePayUException
     {
@@ -62,7 +63,7 @@ public class EmpregadoComissionado extends Empregado
     /*
         setComissao
         valida e guarda a comissão
-        tem nome de setter para o XMLDecoder conseguir usar, por isso o Empregado usa o nome alterarComissao
+        é usado pelo construtor, pelo alterarComissao e pela FabricaEmpregado na troca de tipo
     */
 
     public void setComissao(String comissao) throws WePayUException
@@ -164,13 +165,18 @@ public class EmpregadoComissionado extends Empregado
         return folha.getSecaoComissionados();
     }
 
-    public ArrayList<ResultadoDeVenda> getVendas()
-    {
-        return vendas;
-    }
 
-    public void setVendas(ArrayList<ResultadoDeVenda> vendas)
+
+    @Override
+    public void exportarPara(EmpregadoDTO dados)
     {
-        this.vendas = vendas;
+        super.exportarPara(dados);
+
+        dados.setComissao(comissao);
+
+        for (ResultadoDeVenda venda : vendas)
+        {
+            dados.getVendas().add(venda.paraDTO());
+        }
     }
 }

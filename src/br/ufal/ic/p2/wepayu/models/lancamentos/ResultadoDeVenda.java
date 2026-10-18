@@ -1,4 +1,4 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.lancamentos;
 
 import java.util.Date;
 
@@ -10,10 +10,6 @@ import java.util.Date;
 
 public class ResultadoDeVenda extends Lancamento
 {
-
-    public ResultadoDeVenda()
-    {
-    }
 
     public ResultadoDeVenda(Date data, double valor)
     {

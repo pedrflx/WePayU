@@ -1,5 +1,6 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.folha;
 
+import br.ufal.ic.p2.wepayu.models.empregados.Empregado;
 import java.util.ArrayList;
 import java.util.Date;
 

@@ -1,7 +1,8 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.pagamento;
 
 import br.ufal.ic.p2.wepayu.Exception.*;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
+import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
 
 /*
     Banco
@@ -15,11 +16,6 @@ public class Banco extends MetodoPagamento
     private String banco;
     private String agencia;
     private String contaCorrente;
-
-    public Banco()
-    {
-
-    }
 
     public Banco(String banco, String agencia, String contaCorrente) throws WePayUException
     {
@@ -50,21 +46,12 @@ public class Banco extends MetodoPagamento
         return banco;
     }
 
-    public void setBanco(String banco)
-    {
-        this.banco = banco;
-    }
-
     @Override
     public String getAgencia()
     {
         return agencia;
     }
 
-    public void setAgencia(String agencia)
-    {
-        this.agencia = agencia;
-    }
 
     @Override
     public String getContaCorrente()
@@ -72,8 +59,15 @@ public class Banco extends MetodoPagamento
         return contaCorrente;
     }
 
-    public void setContaCorrente(String contaCorrente)
+
+    @Override
+    public void exportarPara(EmpregadoDTO dados)
     {
-        this.contaCorrente = contaCorrente;
+        super.exportarPara(dados);
+
+        dados.setBanco(banco);
+        dados.setAgencia(agencia);
+        dados.setContaCorrente(contaCorrente);
     }
+
 }

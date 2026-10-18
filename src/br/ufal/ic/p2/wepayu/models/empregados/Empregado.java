@@ -1,8 +1,15 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.empregados;
 
 import br.ufal.ic.p2.wepayu.Exception.*;
+import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
+import br.ufal.ic.p2.wepayu.folha.SecaoFolha;
+import br.ufal.ic.p2.wepayu.models.pagamento.Banco;
+import br.ufal.ic.p2.wepayu.models.pagamento.EmMaos;
+import br.ufal.ic.p2.wepayu.models.pagamento.MetodoPagamento;
+import br.ufal.ic.p2.wepayu.models.sindicato.MembroSindicato;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.Date;
+import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
 
 /*
     Empregado
@@ -20,16 +27,6 @@ public abstract class Empregado
 
     private MetodoPagamento metodoPagamento = new EmMaos();
     private MembroSindicato membroSindicato;
-
-    /*
-        Empregado
-        construtor vazio usado pelo XMLDecoder para recriar o objeto quando os dados são carregados
-        pelo mesmo motivo todas as classes salvas no XML têm construtor vazio e setters
-    */
-
-    public Empregado()
-    {
-    }
 
     /*
         Empregado
@@ -234,10 +231,6 @@ public abstract class Empregado
         return getMembro().getTaxasServico(dataInicial, dataFinal);
     }
 
-    public MembroSindicato getMembroSindicato()
-    {
-        return membroSindicato;
-    }
 
     public void setMembroSindicato(MembroSindicato membroSindicato)
     {
@@ -285,5 +278,127 @@ public abstract class Empregado
     public void setMetodoPagamento(MetodoPagamento metodoPagamento)
     {
         this.metodoPagamento = metodoPagamento;
+    }
+
+    // devolve o valor de um atributo pelo nome que vem do teste
+    // comissao, idSindicato e banco já lançam o erro certo sozinhos quando o empregado não tem aquilo
+    public String getAtributo(String atributo) throws WePayUException
+    {
+        if (atributo.equals("nome"))
+        {
+            return getNome();
+        }
+        else if (atributo.equals("endereco"))
+        {
+            return getEndereco();
+        }
+        else if (atributo.equals("tipo"))
+        {
+            return getTipo();
+        }
+        else if (atributo.equals("sindicalizado"))
+        {
+            return getSindicalizado();
+        }
+        else if (atributo.equals("idSindicato"))
+        {
+            return getIdSindicato();
+        }
+        else if (atributo.equals("taxaSindical"))
+        {
+            return Conversor.completarCentavos(getTaxaSindical());
+        }
+        else if (atributo.equals("salario"))
+        {
+            return Conversor.completarCentavos(getSalario());
+        }
+        else if (atributo.equals("comissao"))
+        {
+            return getComissao();
+        }
+        else if (atributo.equals("metodoPagamento"))
+        {
+            return metodoPagamento.getNome();
+        }
+        else if (atributo.equals("banco"))
+        {
+            return metodoPagamento.getBanco();
+        }
+        else if (atributo.equals("agencia"))
+        {
+            return metodoPagamento.getAgencia();
+        }
+        else if (atributo.equals("contaCorrente"))
+        {
+            return metodoPagamento.getContaCorrente();
+        }
+        throw new AtributoNaoExisteException();
+    }
+
+    // altera um atributo pelo nome que vem do teste
+    // o tipo não entra aqui: trocar o tipo cria outro objeto, e isso é com a fábrica
+    public void alterarAtributo(String atributo, String valor) throws WePayUException
+    {
+        if (atributo.equals("nome"))
+        {
+            setNome(valor);
+        }
+        else if (atributo.equals("endereco"))
+        {
+            setEndereco(valor);
+        }
+        else if (atributo.equals("salario"))
+        {
+            setSalario(valor);
+        }
+        else if (atributo.equals("comissao"))
+        {
+            alterarComissao(valor);
+        }
+        else if (atributo.equals("metodoPagamento"))
+        {
+            setMetodoPagamento(MetodoPagamento.criar(valor));
+        }
+        else if (atributo.equals("sindicalizado"))
+        {
+            // "false" tira do sindicato. "true" sem id e taxa não muda nada
+            if (!Conversor.converterBooleano(valor, new ValorNaoBooleanoException()))
+            {
+                setMembroSindicato(null);
+            }
+        }
+        else
+        {
+            throw new AtributoNaoExisteException();
+        }
+    }
+
+    // versão com os dados da conta: só serve para mudar a forma de pagamento para banco
+    public void alterarAtributo(String atributo, String valor, String banco, String agencia, String contaCorrente) throws WePayUException
+    {
+        if (atributo.equals("metodoPagamento") && valor.equals("banco"))
+        {
+            setMetodoPagamento(new Banco(banco, agencia, contaCorrente));
+        }
+        else
+        {
+            throw new AtributoNaoExisteException();
+        }
+    }
+
+    // escreve no DTO os dados que empregado tem, as filhas completam com o que é só delas
+    public void exportarPara(EmpregadoDTO dados)
+    {
+        dados.setTipo(getTipo());
+        dados.setNome(nome);
+        dados.setEndereco(endereco);
+        dados.setSalario(salario);
+
+        metodoPagamento.exportarPara(dados);
+
+        if (membroSindicato != null)
+        {
+            membroSindicato.exportarPara(dados);
+        }
     }
 }

@@ -104,6 +104,12 @@ public class Conversor
         }
     }
 
+    // faz o caminho contrário do converterData: Date vira texto no formato d/m/aaaa
+    public static String formatarData(Date data)
+    {
+        return new SimpleDateFormat("d/M/yyyy").format(data);
+    }
+
     public static Date[] converterPeriodo(String dataInicial, String dataFinal) throws WePayUException
     {
         Date inicio = converterData(dataInicial, new DataInicialInvalidaException());
@@ -151,6 +157,23 @@ public class Conversor
     public static String formatarValor(double valor)
     {
         return String.format(Locale.US, "%.2f", valor).replace(".", ",");
+    }
+
+    // aceita só "true" ou "false" (pq pra qualquer outra coisa lança o erro recebido)
+    public static boolean converterBooleano(String valor, WePayUException erro) throws WePayUException
+    {
+        if ("true".equals(valor)) return true;
+        if ("false".equals(valor)) return false;
+        throw erro;
+    }
+
+    public static String completarCentavos(String valor)
+    {
+        if (!valor.contains(","))
+        {
+            return valor + ",00";
+        }
+        return valor;
     }
 
     public static String formatarHoras(double horas)

@@ -1,4 +1,4 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.folha;
 
 import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.Locale;

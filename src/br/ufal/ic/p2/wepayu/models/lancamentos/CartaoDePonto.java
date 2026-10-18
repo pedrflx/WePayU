@@ -1,4 +1,4 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.lancamentos;
 
 import java.util.Date;
 
@@ -10,10 +10,6 @@ import java.util.Date;
 public class CartaoDePonto extends Lancamento
 {
 
-    public CartaoDePonto()
-    {
-
-    }
 
     public CartaoDePonto(Date data, double horas)
     {

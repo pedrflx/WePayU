@@ -1,4 +1,4 @@
-package br.ufal.ic.p2.wepayu.models;
+package br.ufal.ic.p2.wepayu.models.lancamentos;
 
 import java.util.Date;
 
@@ -10,9 +10,6 @@ import java.util.Date;
 public class TaxaServico extends Lancamento
 {
 
-    public TaxaServico()
-    {
-    }
 
     public TaxaServico(Date data, double valor)
     {
