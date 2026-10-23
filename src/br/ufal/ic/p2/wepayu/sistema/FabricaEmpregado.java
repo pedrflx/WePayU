@@ -29,11 +29,11 @@ public class FabricaEmpregado
         throw new TipoInvalidoException();
     }
 
-    // troca o tipo copiando os dados comuns (comissionado não pode, porque ficaria sem comissão)
+    // troca o tipo copiando os dados comuns. comissionado não pode, porque ficaria sem comissão
     public static Empregado converterTipo(Empregado empregado, String tipo) throws WePayUException
     {
-        if (tipo.equals("horista")) return new EmpregadoHorista(empregado);
-        if (tipo.equals("assalariado")) return new EmpregadoAssalariado(empregado);
+        if (tipo.equals("horista")) return comAgendaPadrao(new EmpregadoHorista(empregado));
+        if (tipo.equals("assalariado")) return comAgendaPadrao(new EmpregadoAssalariado(empregado));
         if (tipo.equals("comissionado")) throw new ComissaoNulaException();
         throw new TipoInvalidoException();
     }
@@ -45,11 +45,19 @@ public class FabricaEmpregado
         {
             EmpregadoComissionado novo = new EmpregadoComissionado(empregado);
             novo.setComissao(valorExtra);
-            return novo;
+            return comAgendaPadrao(novo);
         }
 
         Empregado novo = converterTipo(empregado, tipo);
         novo.setSalario(valorExtra);
         return novo;
     }
+
+    // quem muda de tipo passa a usar a agenda padrão do tipo novo
+    private static Empregado comAgendaPadrao(Empregado novo) throws WePayUException
+    {
+        novo.usarAgendaPadrao();
+        return novo;
+    }
+
 }

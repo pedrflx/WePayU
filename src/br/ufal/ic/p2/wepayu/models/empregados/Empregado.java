@@ -3,13 +3,15 @@ package br.ufal.ic.p2.wepayu.models.empregados;
 import br.ufal.ic.p2.wepayu.Exception.*;
 import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
 import br.ufal.ic.p2.wepayu.folha.SecaoFolha;
+import br.ufal.ic.p2.wepayu.models.agendas.AgendaPagamento;
 import br.ufal.ic.p2.wepayu.models.pagamento.Banco;
 import br.ufal.ic.p2.wepayu.models.pagamento.EmMaos;
 import br.ufal.ic.p2.wepayu.models.pagamento.MetodoPagamento;
 import br.ufal.ic.p2.wepayu.models.sindicato.MembroSindicato;
-import br.ufal.ic.p2.wepayu.utils.Conversor;
-import java.util.Date;
 import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
+import br.ufal.ic.p2.wepayu.utils.Conversor;
+
+import java.util.Date;
 
 /*
     Empregado
@@ -27,6 +29,7 @@ public abstract class Empregado
 
     private MetodoPagamento metodoPagamento = new EmMaos();
     private MembroSindicato membroSindicato;
+    private AgendaPagamento agendaPagamento;
 
     /*
         Empregado
@@ -39,6 +42,7 @@ public abstract class Empregado
         setNome(nome);
         setEndereco(endereco);
         setSalario(salario);
+        usarAgendaPadrao();
     }
 
     /*
@@ -53,6 +57,7 @@ public abstract class Empregado
         this.endereco = outro.endereco;
         this.salario = outro.salario;
         this.metodoPagamento = outro.metodoPagamento;
+        this.agendaPagamento = outro.agendaPagamento;
         if (outro.membroSindicato != null)
         {
             this.membroSindicato = new MembroSindicato(outro.membroSindicato);
@@ -62,20 +67,14 @@ public abstract class Empregado
     /*
         métodos abstratos
         o que muda de um tipo de empregado para outro, cada filha é obrigada a implementar
-        tipo, cópia, datas e período de pagamento, salário bruto, valores da folha e seção do relatório
+        tipo, cópia, agenda de pagamento padrão, salário bruto, valores da folha e seção do relatório
     */
 
     public abstract String getTipo();
 
     public abstract Empregado clonar();
 
-    public abstract Date getPrimeiroPagamento();
-
-    public abstract Date getProximoPagamento(Date atual);
-
-    public abstract Date getInicioPeriodo(Date pagamento);
-
-    public abstract int getDiasPeriodo(Date pagamento);
+    public abstract AgendaPagamento criarAgendaPadrao() throws WePayUException;
 
     public abstract double calcularSalarioBruto(Date pagamento);
 
@@ -122,6 +121,50 @@ public abstract class Empregado
     public String getHorasExtrasTrabalhadas(String dataInicial, String dataFinal) throws WePayUException
     {
         throw new EmpregadoNaoEhHoristaException();
+    }
+
+    // volta para a agenda de pagamento padrão do tipo. usado na criação e na troca de tipo
+    public void usarAgendaPadrao() throws WePayUException
+    {
+        agendaPagamento = criarAgendaPadrao();
+    }
+
+    public void setAgendaPagamento(AgendaPagamento agendaPagamento)
+    {
+        this.agendaPagamento = agendaPagamento;
+    }
+
+    // a partir de quando o empregado pode receber, o horista sobrescreve com o dia do primeiro cartão
+    public Date getDataInicio()
+    {
+        return Conversor.criarData(1, 1, 2005);
+    }
+
+    // as datas e o período de pagamento vêm todos da agenda
+    public Date getPrimeiroPagamento()
+    {
+        return agendaPagamento.getPrimeiroPagamentoAPartirDe(getDataInicio());
+    }
+
+    public Date getProximoPagamento(Date atual)
+    {
+        return agendaPagamento.getProximoPagamento(atual);
+    }
+
+    public Date getInicioPeriodo(Date pagamento)
+    {
+        return agendaPagamento.getInicioPeriodo(pagamento);
+    }
+
+    public int getDiasPeriodo(Date pagamento)
+    {
+        return agendaPagamento.getDiasPeriodo(pagamento);
+    }
+
+    // parte fixa do salário em cada pagamento, que depende de a agenda ser semanal ou mensal
+    public double calcularSalarioFixo()
+    {
+        return agendaPagamento.calcularSalarioFixo(Conversor.lerNumero(salario));
     }
 
     /*

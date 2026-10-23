@@ -1,14 +1,17 @@
 package br.ufal.ic.p2.wepayu.models.empregados;
 
-import br.ufal.ic.p2.wepayu.Exception.*;
+import br.ufal.ic.p2.wepayu.Exception.DataInvalidaException;
+import br.ufal.ic.p2.wepayu.Exception.HorasNaoPositivasException;
+import br.ufal.ic.p2.wepayu.Exception.WePayUException;
 import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
 import br.ufal.ic.p2.wepayu.folha.SecaoFolha;
+import br.ufal.ic.p2.wepayu.models.agendas.AgendaPagamento;
 import br.ufal.ic.p2.wepayu.models.lancamentos.CartaoDePonto;
-import br.ufal.ic.p2.wepayu.utils.Conversor;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
+import br.ufal.ic.p2.wepayu.utils.Conversor;
+
+import java.util.ArrayList;
+import java.util.Date;
 
 /*
     EmpregadoHorista
@@ -100,16 +103,22 @@ public class EmpregadoHorista extends Empregado
         return total;
     }
 
+    @Override
+    public AgendaPagamento criarAgendaPadrao() throws WePayUException
+    {
+        return AgendaPagamento.criar("semanal 5");
+    }
+
     /*
-        getPrimeiroPagamento
-        primeira sexta-feira a partir do primeiro cartão lançado, ou a partir de 1/1/2005 se não tiver cartão
-        o horista é considerado contratado no dia do primeiro cartão
+        getDataInicio
+        o horista é considerado contratado no dia do primeiro cartão lançado, ou em 1/1/2005 se não tiver cartão
+        assim ele não acumula dívida com o sindicato antes de começar a trabalhar
     */
 
     @Override
-    public Date getPrimeiroPagamento()
+    public Date getDataInicio()
     {
-        Date primeira = Conversor.criarData(1, 1, 2005);
+        Date primeira = super.getDataInicio();
         if (!cartoes.isEmpty())
         {
             primeira = cartoes.get(0).getData();
@@ -121,32 +130,7 @@ public class EmpregadoHorista extends Empregado
                 }
             }
         }
-
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(primeira);
-        while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.FRIDAY)
-        {
-            cal.add(Calendar.DAY_OF_MONTH, 1);
-        }
-        return cal.getTime();
-    }
-
-    @Override
-    public Date getProximoPagamento(Date atual)
-    {
-        return Conversor.adicionarDias(atual, 7);
-    }
-
-    @Override
-    public Date getInicioPeriodo(Date pagamento)
-    {
-        return Conversor.adicionarDias(pagamento, -6);
-    }
-
-    @Override
-    public int getDiasPeriodo(Date pagamento)
-    {
-        return 7;
+        return primeira;
     }
 
     /*

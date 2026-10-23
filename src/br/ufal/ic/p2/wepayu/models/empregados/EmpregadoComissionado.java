@@ -8,6 +8,7 @@ import br.ufal.ic.p2.wepayu.utils.Conversor;
 import java.util.ArrayList;
 import java.util.Date;
 import br.ufal.ic.p2.wepayu.persistencia.EmpregadoDTO;
+import br.ufal.ic.p2.wepayu.models.agendas.AgendaPagamento;
 
 /*
     EmpregadoComissionado
@@ -101,17 +102,6 @@ public class EmpregadoComissionado extends Empregado
         return total;
     }
 
-    /*
-        calcularFixo
-        parte fixa de cada pagamento: salário mensal vezes 24 dividido por 52
-        são 12 meses de salário divididos em 26 pagamentos no ano
-    */
-
-    private double calcularFixo()
-    {
-        return Conversor.truncar((Conversor.lerNumero(getSalario()) * 24) / 52.0);
-    }
-
     private double calcularVendasPeriodo(Date pagamento)
     {
         return somarVendas(getInicioPeriodo(pagamento), Conversor.adicionarDias(pagamento, 1));
@@ -123,40 +113,22 @@ public class EmpregadoComissionado extends Empregado
     }
 
     @Override
-    public Date getPrimeiroPagamento()
+    public AgendaPagamento criarAgendaPadrao() throws WePayUException
     {
-        return Conversor.criarData(14, 1, 2005);
-    }
-
-    @Override
-    public Date getProximoPagamento(Date atual)
-    {
-        return Conversor.adicionarDias(atual, 14);
-    }
-
-    @Override
-    public Date getInicioPeriodo(Date pagamento)
-    {
-        return Conversor.adicionarDias(pagamento, -13);
-    }
-
-    @Override
-    public int getDiasPeriodo(Date pagamento)
-    {
-        return 14;
+        return AgendaPagamento.criar("semanal 2 5");
     }
 
     @Override
     public double calcularSalarioBruto(Date pagamento)
     {
-        return calcularFixo() + calcularComissao(pagamento);
+        return calcularSalarioFixo() + calcularComissao(pagamento);
     }
 
     @Override
     public double[] calcularValoresFolha(Date pagamento)
     {
         double[] valores = calcularPagamento(pagamento);
-        return new double[]{calcularFixo(), calcularVendasPeriodo(pagamento), calcularComissao(pagamento), valores[0], valores[1], valores[2]};
+        return new double[]{calcularSalarioFixo(), calcularVendasPeriodo(pagamento), calcularComissao(pagamento), valores[0], valores[1], valores[2]};
     }
 
     @Override

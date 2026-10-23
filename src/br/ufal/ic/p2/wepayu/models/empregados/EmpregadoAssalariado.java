@@ -3,8 +3,8 @@ package br.ufal.ic.p2.wepayu.models.empregados;
 import br.ufal.ic.p2.wepayu.Exception.WePayUException;
 import br.ufal.ic.p2.wepayu.folha.FolhaDePagamento;
 import br.ufal.ic.p2.wepayu.folha.SecaoFolha;
-import br.ufal.ic.p2.wepayu.utils.Conversor;
-import java.util.Calendar;
+import br.ufal.ic.p2.wepayu.models.agendas.AgendaPagamento;
+
 import java.util.Date;
 
 /*
@@ -38,52 +38,15 @@ public class EmpregadoAssalariado extends Empregado
     }
 
     @Override
-    public Date getPrimeiroPagamento()
+    public AgendaPagamento criarAgendaPadrao() throws WePayUException
     {
-        return Conversor.criarData(31, 1, 2005);
-    }
-
-    /*
-        getProximoPagamento
-        último dia do mês seguinte, se cair no sábado volta 1 dia e se cair no domingo volta 2
-    */
-
-    @Override
-    public Date getProximoPagamento(Date atual)
-    {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(atual);
-        cal.add(Calendar.MONTH, 1);
-        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-
-        int diaSemana = cal.get(Calendar.DAY_OF_WEEK);
-        if (diaSemana == Calendar.SATURDAY) cal.add(Calendar.DAY_OF_MONTH, -1);
-        else if (diaSemana == Calendar.SUNDAY) cal.add(Calendar.DAY_OF_MONTH, -2);
-
-        return cal.getTime();
-    }
-
-    @Override
-    public Date getInicioPeriodo(Date pagamento)
-    {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(pagamento);
-        cal.set(Calendar.DAY_OF_MONTH, 1);
-        return cal.getTime();
-    }
-
-    @Override
-    public int getDiasPeriodo(Date pagamento)
-    {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(pagamento);
-        return cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        return AgendaPagamento.criar("mensal $");
     }
 
     @Override
     public double calcularSalarioBruto(Date pagamento)
     {
-        return Conversor.lerNumero(getSalario());
+        return calcularSalarioFixo();
     }
 
     @Override
