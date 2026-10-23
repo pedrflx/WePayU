@@ -9,6 +9,7 @@ import br.ufal.ic.p2.wepayu.sistema.Historico;
 import br.ufal.ic.p2.wepayu.sistema.RepositorioEmpregados;
 import br.ufal.ic.p2.wepayu.sistema.Sindicato;
 import br.ufal.ic.p2.wepayu.utils.Conversor;
+import br.ufal.ic.p2.wepayu.sistema.AgendasDePagamento;
 
 public class Facade
 {
@@ -17,6 +18,7 @@ public class Facade
     private RepositorioEmpregados repositorio;
     private Historico historico;
     private Sindicato sindicato;
+    private AgendasDePagamento agendas = new AgendasDePagamento();
     private boolean encerrado = false;
 
     /*
@@ -85,6 +87,7 @@ public class Facade
     public void zerarSistema()
     {
         repositorio.zerar();
+        agendas.zerar();
         encerrado = false;
 
         salvarEstado();
@@ -190,6 +193,10 @@ public class Facade
         {
             repositorio.substituir(emp, FabricaEmpregado.converterTipo(empregadoTemporario, valor));
         }
+        else if (atributo.equals("agendaPagamento"))
+        {
+            empregadoTemporario.setAgendaPagamento(agendas.buscar(valor));
+        }
         else
         {
             empregadoTemporario.alterarAtributo(atributo, valor);
@@ -265,5 +272,10 @@ public class Facade
     {
         montarFolha(data).gravar(saida);
         salvarEstado();
+    }
+
+    public void criarAgendaDePagamentos(String descricao) throws Exception
+    {
+        agendas.criar(descricao);
     }
 }

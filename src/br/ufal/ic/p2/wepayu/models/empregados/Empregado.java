@@ -375,6 +375,10 @@ public abstract class Empregado
         {
             return metodoPagamento.getContaCorrente();
         }
+        else if (atributo.equals("agendaPagamento"))
+        {
+            return agendaPagamento.getDescricao();
+        }
         throw new AtributoNaoExisteException();
     }
 
