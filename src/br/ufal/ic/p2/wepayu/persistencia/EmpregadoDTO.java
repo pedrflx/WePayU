@@ -13,6 +13,7 @@ public class EmpregadoDTO
     private String endereco;
     private String salario;
     private String comissao;
+    private String agendaPagamento;
 
     private String metodoPagamento;
     private String banco;
@@ -78,6 +79,16 @@ public class EmpregadoDTO
     public void setComissao(String comissao)
     {
         this.comissao = comissao;
+    }
+
+    public String getAgendaPagamento()
+    {
+        return agendaPagamento;
+    }
+
+    public void setAgendaPagamento(String agendaPagamento)
+    {
+        this.agendaPagamento = agendaPagamento;
     }
 
     public String getMetodoPagamento()

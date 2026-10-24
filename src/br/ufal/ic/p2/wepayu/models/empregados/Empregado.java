@@ -440,6 +440,7 @@ public abstract class Empregado
         dados.setNome(nome);
         dados.setEndereco(endereco);
         dados.setSalario(salario);
+        dados.setAgendaPagamento(agendaPagamento.getDescricao());
 
         metodoPagamento.exportarPara(dados);
 

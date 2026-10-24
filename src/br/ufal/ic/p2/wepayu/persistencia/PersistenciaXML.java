@@ -2,6 +2,7 @@ package br.ufal.ic.p2.wepayu.persistencia;
 
 import br.ufal.ic.p2.wepayu.Exception.ErroPersistenciaException;
 import br.ufal.ic.p2.wepayu.Exception.WePayUException;
+import br.ufal.ic.p2.wepayu.models.agendas.AgendaPagamento;
 import br.ufal.ic.p2.wepayu.models.empregados.Empregado;
 import br.ufal.ic.p2.wepayu.models.sindicato.MembroSindicato;
 import br.ufal.ic.p2.wepayu.sistema.FabricaEmpregado;
@@ -15,36 +16,40 @@ import java.util.ArrayList;
 
 /*
     PersistenciaXML
-    salva e carrega a lista de empregados no arquivo dados.xml usando XMLEncoder e XMLDecoder
+    salva e carrega os empregados e as agendas de pagamento no arquivo dados.xml usando XMLEncoder e XMLDecoder
     é o que faz os dados continuarem existindo de um arquivo de teste para o outro
-    no arquivo vão só DTOs.
-    na leitura cada empregado é recriado pelos construtores e métodos normais, com validação
+    no arquivo vão só DTOs; na leitura cada empregado é recriado pelos construtores e métodos normais, com validação
 */
 
 public class PersistenciaXML
 {
 
     private String arquivo;
+    private ArrayList<Empregado> empregadosLidos = new ArrayList<>();
+    private ArrayList<String> agendasLidas = new ArrayList<>();
 
     public PersistenciaXML(String arquivo)
     {
         this.arquivo = arquivo;
     }
 
-    // transforma cada empregado em DTO e grava
-    // quem foi removido continua null para os ids não mudarem
-    public void salvar(ArrayList<Empregado> empregados) throws WePayUException
+    // transforma cada empregado em DTO e grava junto com as agendas; quem foi removido continua null para os ids não mudarem
+    public void salvar(ArrayList<Empregado> empregados, ArrayList<String> agendas) throws WePayUException
     {
-        EmpregadoDTO[] dados = new EmpregadoDTO[empregados.size()];
+        EmpregadoDTO[] lista = new EmpregadoDTO[empregados.size()];
 
         for (int i = 0; i < empregados.size(); i++)
         {
             if (empregados.get(i) != null)
             {
-                dados[i] = new EmpregadoDTO();
-                empregados.get(i).exportarPara(dados[i]);
+                lista[i] = new EmpregadoDTO();
+                empregados.get(i).exportarPara(lista[i]);
             }
         }
+
+        DadosDTO dados = new DadosDTO();
+        dados.setEmpregados(lista);
+        dados.setAgendas(agendas);
 
         try
         {
@@ -58,32 +63,40 @@ public class PersistenciaXML
         }
     }
 
-    // lê os DTOs do arquivo e recria cada empregado. sem arquivo, começa com a lista vazia
-    public ArrayList<Empregado> carregar() throws WePayUException
+    // lê o arquivo e recria os empregados e as agendas; sem arquivo, as duas listas ficam vazias
+    public void carregar() throws WePayUException
     {
-        ArrayList<Empregado> empregados = new ArrayList<>();
-
         if (!new File(arquivo).exists())
         {
-            return empregados;
+            return;
         }
 
         try
         {
             XMLDecoder decoder = new XMLDecoder(new FileInputStream(arquivo));
-            EmpregadoDTO[] lidos = (EmpregadoDTO[]) decoder.readObject();
+            DadosDTO dados = (DadosDTO) decoder.readObject();
             decoder.close();
 
-            for (EmpregadoDTO dados : lidos)
+            for (EmpregadoDTO empregado : dados.getEmpregados())
             {
-                empregados.add(reconstruir(dados));
+                empregadosLidos.add(reconstruir(empregado));
             }
-            return empregados;
+            agendasLidas = dados.getAgendas();
         }
         catch (FileNotFoundException e)
         {
             throw new ErroPersistenciaException();
         }
+    }
+
+    public ArrayList<Empregado> getEmpregadosLidos()
+    {
+        return empregadosLidos;
+    }
+
+    public ArrayList<String> getAgendasLidas()
+    {
+        return agendasLidas;
     }
 
     // recria o empregado pelos construtores e métodos normais, então tudo passa pela validação de novo
@@ -105,13 +118,17 @@ public class PersistenciaXML
             empregado.alterarAtributo("metodoPagamento", dados.getMetodoPagamento());
         }
 
+        if (dados.getAgendaPagamento() != null)
+        {
+            empregado.setAgendaPagamento(AgendaPagamento.criar(dados.getAgendaPagamento()));
+        }
+
         if (dados.getIdSindicato() != null)
         {
             empregado.setMembroSindicato(new MembroSindicato(dados.getIdSindicato(), dados.getTaxaSindical()));
         }
 
-        // os lançamentos são registrados de novo
-        // cada lista só tem itens no tipo de empregado certo
+        // os lançamentos são registrados de novo; cada lista só tem itens no tipo de empregado certo
         for (LancamentoDTO cartao : dados.getCartoes())
         {
             empregado.registrarCartao(cartao.getData(), cartao.getValor());

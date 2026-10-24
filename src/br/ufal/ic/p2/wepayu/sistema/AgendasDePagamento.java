@@ -11,9 +11,17 @@ public class AgendasDePagamento
 {
     private ArrayList<String> disponiveis = new ArrayList<>();
 
-    public AgendasDePagamento()
+    // usa as agendas salvas no dados.xml sem nada salvo, começa com as padrão
+    public AgendasDePagamento(ArrayList<String> salvas)
     {
-        zerar();
+        if (salvas.isEmpty())
+        {
+            zerar();
+        }
+        else
+        {
+            disponiveis = salvas;
+        }
     }
 
     public void zerar()

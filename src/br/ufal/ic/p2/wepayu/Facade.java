@@ -18,7 +18,7 @@ public class Facade
     private RepositorioEmpregados repositorio;
     private Historico historico;
     private Sindicato sindicato;
-    private AgendasDePagamento agendas = new AgendasDePagamento();
+    private AgendasDePagamento agendas;
     private boolean encerrado = false;
 
     /*
@@ -29,7 +29,10 @@ public class Facade
 
     public Facade() throws Exception
     {
-        repositorio = new RepositorioEmpregados(persistencia.carregar());
+        persistencia.carregar();
+
+        repositorio = new RepositorioEmpregados(persistencia.getEmpregadosLidos());
+        agendas = new AgendasDePagamento(persistencia.getAgendasLidas());
         historico = new Historico(repositorio.getEmpregados());
         sindicato = new Sindicato(repositorio);
     }
@@ -101,7 +104,7 @@ public class Facade
 
     public void encerrarSistema() throws Exception
     {
-        persistencia.salvar(repositorio.getEmpregados());
+        persistencia.salvar(repositorio.getEmpregados(), agendas.getDisponiveis());
         encerrado = true;
     }
 
